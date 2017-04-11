@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes #-}
 -- |
 --
 -- = Simpler API
@@ -268,6 +269,12 @@ import           Network.HTTP.Client.Internal (Cookie (..), CookieJar (..),
                                                Request (..), RequestBody (..),
                                                Response (..))
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
+
 -- | Download the specified 'Request', returning the results as a 'Response'.
 --
 -- This is a simplified version of 'http' for the common case where you simply
@@ -290,7 +297,7 @@ import           Network.HTTP.Client.Internal (Cookie (..), CookieJar (..),
 --
 -- Note: Unlike previous versions, this function will perform redirects, as
 -- specified by the 'redirectCount' setting.
-httpLbs :: MonadIO m => Request -> Manager -> m (Response L.ByteString)
+httpLbs :: HasCallStack => MonadIO m => Request -> Manager -> m (Response L.ByteString)
 httpLbs r m = liftIO $ Client.httpLbs r m
 
 -- | Download the specified URL, following any redirects, and
@@ -308,7 +315,7 @@ httpLbs r m = liftIO $ Client.httpLbs r m
 --
 -- Note: This function creates a new 'Manager'. It should be avoided
 -- in production code.
-simpleHttp :: MonadIO m => String -> m L.ByteString
+simpleHttp :: HasCallStack => MonadIO m => String -> m L.ByteString
 simpleHttp url = liftIO $ do
     man <- newManager tlsManagerSettings
     req <- liftIO $ parseUrlThrow url
@@ -318,13 +325,13 @@ conduitManagerSettings :: ManagerSettings
 conduitManagerSettings = tlsManagerSettings
 {-# DEPRECATED conduitManagerSettings "Use tlsManagerSettings" #-}
 
-withManager :: (MonadIO m, MonadBaseControl IO m)
+withManager :: (HasCallStack, MonadIO m, MonadBaseControl Prelude.IO m)
             => (Manager -> ResourceT m a)
             -> m a
 withManager = withManagerSettings tlsManagerSettings
 {-# DEPRECATED withManager "Please use newManager tlsManagerSettings" #-}
 
-withManagerSettings :: (MonadIO m, MonadBaseControl IO m)
+withManagerSettings :: (HasCallStack, MonadIO m, MonadBaseControl Prelude.IO m)
                     => ManagerSettings
                     -> (Manager -> ResourceT m a)
                     -> m a
@@ -360,13 +367,13 @@ http req man = do
 #endif
     return res { responseBody = rsrc }
 
-requestBodySource :: Int64 -> Source (ResourceT IO) S.ByteString -> RequestBody
+requestBodySource :: Int64 -> Source (ResourceT Prelude.IO) S.ByteString -> RequestBody
 requestBodySource size = RequestBodyStream size . srcToPopper
 
-requestBodySourceChunked :: Source (ResourceT IO) S.ByteString -> RequestBody
+requestBodySourceChunked :: Source (ResourceT Prelude.IO) S.ByteString -> RequestBody
 requestBodySourceChunked = RequestBodyStreamChunked . srcToPopper
 
-srcToPopper :: Source (ResourceT IO) S.ByteString -> HCC.GivesPopper ()
+srcToPopper :: Source (ResourceT Prelude.IO) S.ByteString -> HCC.GivesPopper ()
 srcToPopper src f = runResourceT $ do
     (rsrc0, ()) <- src $$+ return ()
     irsrc <- liftIO $ newIORef rsrc0
@@ -383,8 +390,8 @@ srcToPopper src f = runResourceT $ do
                     | otherwise -> return bs
     liftIO $ f popper
 
-requestBodySourceIO :: Int64 -> Source IO S.ByteString -> RequestBody
+requestBodySourceIO :: Int64 -> Source Prelude.IO S.ByteString -> RequestBody
 requestBodySourceIO = HCC.requestBodySource
 
-requestBodySourceChunkedIO :: Source IO S.ByteString -> RequestBody
+requestBodySourceChunkedIO :: Source Prelude.IO S.ByteString -> RequestBody
 requestBodySourceChunkedIO = HCC.requestBodySourceChunked

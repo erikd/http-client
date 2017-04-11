@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE RankNTypes #-}
 -- | Support for making connections via the connection package and, in turn,
 -- the tls package suite.
 --
@@ -50,9 +51,17 @@ import qualified Data.Text as T
 import Data.Text.Read (decimal)
 import qualified Network.URI as U
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
+
+
 -- | Create a TLS-enabled 'ManagerSettings' with the given 'NC.TLSSettings' and
 -- 'NC.SockSettings'
-mkManagerSettings :: NC.TLSSettings
+mkManagerSettings :: HasCallStack
+                  => NC.TLSSettings
                   -> Maybe NC.SockSettings
                   -> ManagerSettings
 mkManagerSettings = mkManagerSettingsContext Nothing
@@ -66,7 +75,8 @@ mkManagerSettings = mkManagerSettingsContext Nothing
 --
 -- @since 0.3.2
 mkManagerSettingsContext
-    :: Maybe NC.ConnectionContext
+    :: HasCallStack 
+    => Maybe NC.ConnectionContext
     -> NC.TLSSettings
     -> Maybe NC.SockSettings
     -> ManagerSettings
@@ -74,7 +84,8 @@ mkManagerSettingsContext mcontext tls sock = mkManagerSettingsContext' mcontext 
 
 -- | Internal, allow different SockSettings for HTTP and HTTPS
 mkManagerSettingsContext'
-    :: Maybe NC.ConnectionContext
+    :: HasCallStack
+    => Maybe NC.ConnectionContext
     -> NC.TLSSettings
     -> Maybe NC.SockSettings -- ^ insecure
     -> Maybe NC.SockSettings -- ^ secure
@@ -113,7 +124,7 @@ tlsManagerSettings = mkManagerSettings def Nothing
 getTlsConnection :: Maybe NC.ConnectionContext
                  -> Maybe NC.TLSSettings
                  -> Maybe NC.SockSettings
-                 -> IO (Maybe HostAddress -> String -> Int -> IO Connection)
+                 -> IO (Maybe HostAddress -> String -> Int -> Prelude.IO Connection)
 getTlsConnection mcontext tls sock = do
     context <- maybe NC.initConnectionContext return mcontext
     return $ \_ha host port -> bracketOnError
@@ -130,7 +141,7 @@ getTlsProxyConnection
     :: Maybe NC.ConnectionContext
     -> NC.TLSSettings
     -> Maybe NC.SockSettings
-    -> IO (S.ByteString -> (Connection -> IO ()) -> String -> Maybe HostAddress -> String -> Int -> IO Connection)
+    -> IO (S.ByteString -> (Connection -> Prelude.IO ()) -> String -> Maybe HostAddress -> String -> Int -> Prelude.IO Connection)
 getTlsProxyConnection mcontext tls sock = do
     context <- maybe NC.initConnectionContext return mcontext
     return $ \connstr checkConn serverName _ha host port -> bracketOnError

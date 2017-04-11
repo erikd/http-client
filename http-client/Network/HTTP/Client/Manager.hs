@@ -58,20 +58,26 @@ import System.Environment (getEnvironment)
 import qualified Network.URI as U
 import Control.Monad (guard)
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
+
 -- | A value for the @managerRawConnection@ setting, but also allows you to
 -- modify the underlying @Socket@ to set additional settings. For a motivating
 -- use case, see: <https://github.com/snoyberg/http-client/issues/71>.
 --
 -- Since 0.3.8
-rawConnectionModifySocket :: (NS.Socket -> IO ())
-                          -> IO (Maybe NS.HostAddress -> String -> Int -> IO Connection)
+rawConnectionModifySocket :: (NS.Socket -> Prelude.IO ())
+                          -> IO (Maybe NS.HostAddress -> String -> Int -> Prelude.IO Connection)
 rawConnectionModifySocket = return . openSocketConnection
 
 -- | Same as @rawConnectionModifySocket@, but also takes in a chunk size.
 --
 -- @since 0.5.2
-rawConnectionModifySocketSize :: (NS.Socket -> IO ())
-                              -> IO (Int -> Maybe NS.HostAddress -> String -> Int -> IO Connection)
+rawConnectionModifySocketSize :: (NS.Socket -> Prelude.IO ())
+                              -> IO (Int -> Maybe NS.HostAddress -> String -> Int -> Prelude.IO Connection)
 rawConnectionModifySocketSize = return . openSocketConnectionSize
 
 

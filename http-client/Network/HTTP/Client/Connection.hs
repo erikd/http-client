@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE RankNTypes #-}
 module Network.HTTP.Client.Connection
     ( connectionReadLine
     , connectionReadLineWith
@@ -23,6 +24,12 @@ import qualified Control.Exception as E
 import qualified Data.ByteString as S
 import Data.Word (Word8)
 import Data.Function (fix)
+
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
 
 connectionReadLine :: Connection -> IO ByteString
 connectionReadLine conn = do
@@ -64,7 +71,7 @@ killCR bs
 
 -- | For testing
 dummyConnection :: [ByteString] -- ^ input
-                -> IO (Connection, IO [ByteString], IO [ByteString]) -- ^ conn, output, input
+                -> IO (Connection, Prelude.IO [ByteString], Prelude.IO [ByteString]) -- ^ conn, output, input
 dummyConnection input0 = do
     iinput <- newIORef input0
     ioutput <- newIORef []
@@ -131,14 +138,14 @@ socketConnection socket chunksize = makeConnection
     (sendAll socket)
     (NS.close socket)
 
-openSocketConnection :: (Socket -> IO ())
+openSocketConnection :: (Socket -> Prelude.IO ())
                      -> Maybe HostAddress
                      -> String -- ^ host
                      -> Int -- ^ port
                      -> IO Connection
 openSocketConnection f = openSocketConnectionSize f 8192
 
-openSocketConnectionSize :: (Socket -> IO ())
+openSocketConnectionSize :: (Socket ->Prelude.IO ())
                          -> Int -- ^ chunk size
                          -> Maybe HostAddress
                          -> String -- ^ host
