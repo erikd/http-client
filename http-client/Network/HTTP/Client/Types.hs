@@ -61,6 +61,12 @@ import Data.Streaming.Zlib (ZlibException)
 import Control.Concurrent.MVar (MVar)
 import Data.CaseInsensitive as CI
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
+
 -- | An @IO@ action that represents an incoming response body coming from the
 -- server. Data provided by this action has already been gunzipped and
 -- de-chunked, and respects any content-length headers present.
@@ -69,7 +75,7 @@ import Data.CaseInsensitive as CI
 -- bytestring if no more data is available.
 --
 -- Since 0.4.0
-type BodyReader = IO S.ByteString
+type BodyReader = Prelude.IO S.ByteString
 
 data Connection = Connection
     { connectionRead :: IO S.ByteString
@@ -378,19 +384,19 @@ builderToStream (len, builder) =
 -- single empty bytestring when no more data is available.
 --
 -- Since 0.1.0
-type Popper = IO S.ByteString
+type Popper = Prelude.IO S.ByteString
 
 -- | A function which must be provided with a 'Popper'.
 --
 -- Since 0.1.0
-type NeedsPopper a = Popper -> IO a
+type NeedsPopper a = Popper -> Prelude.IO a
 
 -- | A function which will provide a 'Popper' to a 'NeedsPopper'. This
 -- seemingly convoluted structure allows for creation of request bodies which
 -- allocate scarce resources in an exception safe manner.
 --
 -- Since 0.1.0
-type GivesPopper a = NeedsPopper a -> IO a
+type GivesPopper a = NeedsPopper a -> Prelude.IO a
 
 -- | All information on how to connect to a host and what should be sent in the
 -- HTTP request.
@@ -571,7 +577,7 @@ instance Show Request where
 data ConnReuse = Reuse | DontReuse
     deriving T.Typeable
 
-type ConnRelease = ConnReuse -> IO ()
+type ConnRelease = ConnReuse -> Prelude.IO ()
 
 data ManagedConn = Fresh | Reused
 
@@ -626,15 +632,15 @@ data ManagerSettings = ManagerSettings
       -- ^ Number of connections to a single host to keep alive. Default: 10.
       --
       -- Since 0.1.0
-    , managerRawConnection :: IO (Maybe NS.HostAddress -> String -> Int -> IO Connection)
+    , managerRawConnection :: IO (Maybe NS.HostAddress -> String -> Int -> Prelude.IO Connection)
       -- ^ Create an insecure connection.
       --
       -- Since 0.1.0
-    , managerTlsConnection :: IO (Maybe NS.HostAddress -> String -> Int -> IO Connection)
+    , managerTlsConnection :: IO (Maybe NS.HostAddress -> String -> Int -> Prelude.IO Connection)
       -- ^ Create a TLS connection. Default behavior: throw an exception that TLS is not supported.
       --
       -- Since 0.1.0
-    , managerTlsProxyConnection :: IO (S.ByteString -> (Connection -> IO ()) -> String -> Maybe NS.HostAddress -> String -> Int -> IO Connection)
+    , managerTlsProxyConnection :: IO (S.ByteString -> (Connection -> Prelude.IO ()) -> String -> Maybe NS.HostAddress -> String -> Int -> Prelude.IO Connection)
       -- ^ Create a TLS proxy connection. Default behavior: throw an exception that TLS is not supported.
       --
       -- Since 0.2.2
@@ -700,7 +706,7 @@ data ManagerSettings = ManagerSettings
 --
 -- Since 0.4.7
 newtype ProxyOverride = ProxyOverride
-    { runProxyOverride :: Bool -> IO (Request -> Request)
+    { runProxyOverride :: Bool -> Prelude.IO (Request -> Request)
     }
     deriving T.Typeable
 

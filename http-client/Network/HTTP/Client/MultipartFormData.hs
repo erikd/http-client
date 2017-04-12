@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 -- | This module handles building multipart/form-data. Example usage:
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
@@ -77,6 +78,8 @@ import Data.Monoid (Monoid(..))
 import Control.Monad
 import Data.ByteString.Lazy.Internal (defaultChunkSize)
 
+import GHC.Stack
+
 -- | A single part of a multipart message.
 data Part = Part
     { partName :: Text -- ^ Name of the corresponding \<input\>
@@ -154,6 +157,7 @@ streamFile :: FilePath -> GivesPopper ()
 streamFile fp np =
     withFile fp ReadMode $ np . go
   where
+    go :: Handle -> Popper
     go h = BS.hGetSome h defaultChunkSize
 
 -- | 'partFileSourceChunked' will read a file and send it in chunks.

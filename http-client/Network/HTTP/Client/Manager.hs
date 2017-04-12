@@ -342,7 +342,7 @@ nonEmptyMapM_ f (Cons x _ _ l) = f x >> nonEmptyMapM_ f l
 getManagedConn
     :: Manager
     -> ConnKey
-    -> IO Connection
+    -> Prelude.IO Connection
     -> IO (ConnRelease, Connection, ManagedConn)
 -- We want to avoid any holes caused by async exceptions, so let's mask.
 getManagedConn man key open = mask $ \restore -> do
