@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 module Network.HTTP.Client.Body
     ( makeChunkedReader
     , makeLengthReader
@@ -22,6 +23,12 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import Control.Monad (unless, when)
 import qualified Data.Streaming.Zlib as Z
+
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
 
 -- ^ Get a single chunk of data from the response body, or an empty
 -- bytestring if no more data is available.
