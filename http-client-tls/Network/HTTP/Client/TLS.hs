@@ -54,6 +54,7 @@ import qualified Network.URI as U
 import GHC.Stack
 import Prelude hiding (IO)
 import qualified Prelude
+import Debug.Trace
 
 type IO a = HasCallStack => Prelude.IO a
 
@@ -109,9 +110,10 @@ mkManagerSettingsContext' mcontext tls sockHTTP sockHTTPS = defaultManagerSettin
               | Just (_ :: NC.LineTooLong)       <- fromException se = se'
 #if MIN_VERSION_connection(0,2,7)
               | Just (_ :: NC.HostNotResolved)   <- fromException se = se'
-              | Just (_ :: NC.HostCannotConnect) <- fromException se = se'
+              | Just (_ :: NC.HostCannotConnect) <- fromException se =
+                                                         trace ("HostCannotConnect:\n" ++ prettyCallStack callStack) se'
 #endif
-              | otherwise = se
+              | otherwise = error $ "managerWrapException: " ++ show se
               where
                 se' = toException $ HttpExceptionRequest req $ InternalException se
          in handle $ throwIO . wrapper

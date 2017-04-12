@@ -658,7 +658,7 @@ data ManagerSettings = ManagerSettings
     -- new one.
     --
     -- Since 0.1.0
-    , managerWrapException :: forall a. Request -> IO a -> IO a
+    , managerWrapException :: forall a. HasCallStack => Request -> IO a -> IO a
     -- ^ Action wrapped around all attempted @Request@s, usually used to wrap
     -- up exceptions in library-specific types.
     --
