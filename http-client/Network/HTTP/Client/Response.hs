@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE RankNTypes #-}
 module Network.HTTP.Client.Response
     ( getRedirectedRequest
     , getResponse
@@ -22,6 +23,12 @@ import Network.HTTP.Client.Request
 import Network.HTTP.Client.Util
 import Network.HTTP.Client.Body
 import Network.HTTP.Client.Headers
+
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
 
 -- | If a request is a redirection (status code 3xx) this function will create
 -- a new request from the old request, the server headers returned with the
@@ -81,7 +88,7 @@ getResponse :: ConnRelease
             -> Maybe Int
             -> Request
             -> Connection
-            -> Maybe (IO ()) -- ^ Action to run in case of a '100 Continue'.
+            -> Maybe (Prelude.IO ()) -- ^ Action to run in case of a '100 Continue'.
             -> IO (Response BodyReader)
 getResponse connRelease timeout' req@(Request {..}) conn cont = do
     StatusHeaders s version hs <- parseStatusHeaders conn timeout' cont
