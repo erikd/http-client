@@ -71,7 +71,7 @@ import Control.Monad.IO.Class
 import System.FilePath
 import System.Random
 import Data.Array.Base
-import System.IO
+import System.IO hiding (IO)
 import Data.Bits
 import Data.Word
 import Data.Monoid (Monoid(..))
@@ -79,6 +79,10 @@ import Control.Monad
 import Data.ByteString.Lazy.Internal (defaultChunkSize)
 
 import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
 
 -- | A single part of a multipart message.
 data Part = Part
@@ -271,7 +275,7 @@ webkitBoundaryPure g = (`runState` g) $ do
 -- | Add form data to the 'Request'.
 --
 -- This sets a new 'requestBody', adds a content-type request header and changes the method to POST.
-formDataBody :: MonadIO m => [Part] -> Request -> m Request
+formDataBody :: HasCallStack => MonadIO m => [Part] -> Request -> m Request
 formDataBody a b = liftIO $ do
     boundary <- webkitBoundary
     formDataBodyWithBoundary boundary a b

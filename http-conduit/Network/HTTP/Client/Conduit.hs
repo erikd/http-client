@@ -52,6 +52,12 @@ import           Network.HTTP.Client          hiding (closeManager,
 import qualified Network.HTTP.Client          as H
 import           Network.HTTP.Client.TLS      (tlsManagerSettings)
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
+
 -- | Conduit powered version of 'H.withResponse'. Differences are:
 --
 -- * Response body is represented as a @Producer@.
@@ -61,7 +67,7 @@ import           Network.HTTP.Client.TLS      (tlsManagerSettings)
 -- * The @Manager@ is contained by a @MonadReader@ context.
 --
 -- Since 2.1.0
-withResponse :: (MonadBaseControl IO m, MonadIO n, MonadReader env m, HasHttpManager env)
+withResponse :: (HasCallStack, MonadBaseControl Prelude.IO m, MonadIO n, MonadReader env m, HasHttpManager env)
              => Request
              -> (Response (ConduitM i ByteString n ()) -> m a)
              -> m a
@@ -72,7 +78,7 @@ withResponse req f = do
 -- | An @Acquire@ for getting a @Response@.
 --
 -- Since 2.1.0
-acquireResponse :: (MonadIO n, MonadReader env m, HasHttpManager env)
+acquireResponse :: (HasCallStack, MonadIO n, MonadReader env m, HasHttpManager env)
                 => Request
                 -> m (Acquire (Response (ConduitM i ByteString n ())))
 acquireResponse req = do
@@ -91,25 +97,25 @@ defaultManagerSettings = tlsManagerSettings
 -- | Get a new manager using 'defaultManagerSettings'.
 --
 -- Since 2.1.0
-newManager :: MonadIO m => m Manager
+newManager :: HasCallStack => MonadIO m => m Manager
 newManager = newManagerSettings defaultManagerSettings
 
 -- | Get a new manager using the given settings.
 --
 -- Since 2.1.0
-newManagerSettings :: MonadIO m => ManagerSettings -> m Manager
+newManagerSettings :: HasCallStack => MonadIO m => ManagerSettings -> m Manager
 newManagerSettings = liftIO . H.newManager
 
 -- | Get a new manager with 'defaultManagerSettings' and construct a @ReaderT@ containing it.
 --
 -- Since 2.1.0
-withManager :: MonadIO m => (ReaderT Manager m a) -> m a
+withManager :: HasCallStack => MonadIO m => (ReaderT Manager m a) -> m a
 withManager = withManagerSettings defaultManagerSettings
 
 -- | Get a new manager with the given settings and construct a @ReaderT@ containing it.
 --
 -- Since 2.1.0
-withManagerSettings :: MonadIO m => ManagerSettings -> (ReaderT Manager m a) -> m a
+withManagerSettings :: HasCallStack => MonadIO m => ManagerSettings -> (ReaderT Manager m a) -> m a
 withManagerSettings settings (ReaderT inner) = newManagerSettings settings >>= inner
 
 -- | Conduit-powered version of 'H.responseOpen'.
@@ -117,7 +123,7 @@ withManagerSettings settings (ReaderT inner) = newManagerSettings settings >>= i
 -- See 'withResponse' for the differences with 'H.responseOpen'.
 --
 -- Since 2.1.0
-responseOpen :: (MonadIO m, MonadIO n, MonadReader env m, HasHttpManager env)
+responseOpen :: (HasCallStack, MonadIO m, MonadIO n, MonadReader env m, HasHttpManager env)
              => Request
              -> m (Response (ConduitM i ByteString n ()))
 responseOpen req = do
@@ -127,10 +133,11 @@ responseOpen req = do
 -- | Generalized version of 'H.responseClose'.
 --
 -- Since 2.1.0
-responseClose :: MonadIO m => Response body -> m ()
+responseClose :: HasCallStack => MonadIO m => Response body -> m ()
 responseClose = liftIO . H.responseClose
 
-bodyReaderSource :: MonadIO m
+bodyReaderSource :: HasCallStack 
+                 => MonadIO m
                  => H.BodyReader
                  -> Producer m ByteString
 bodyReaderSource br =
@@ -142,13 +149,13 @@ bodyReaderSource br =
             yield bs
             loop
 
-requestBodySource :: Int64 -> Source IO ByteString -> RequestBody
+requestBodySource :: Int64 -> Source Prelude.IO ByteString -> RequestBody
 requestBodySource size = RequestBodyStream size . srcToPopperIO
 
-requestBodySourceChunked :: Source IO ByteString -> RequestBody
+requestBodySourceChunked :: Source Prelude.IO ByteString -> RequestBody
 requestBodySourceChunked = RequestBodyStreamChunked . srcToPopperIO
 
-srcToPopperIO :: Source IO ByteString -> GivesPopper ()
+srcToPopperIO :: Source Prelude.IO ByteString -> GivesPopper ()
 srcToPopperIO src f = do
     (rsrc0, ()) <- src $$+ return ()
     irsrc <- newIORef rsrc0

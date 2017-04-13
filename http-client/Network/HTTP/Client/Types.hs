@@ -315,7 +315,7 @@ data RequestBody
     | RequestBodyBuilder Int64 Builder
     | RequestBodyStream Int64 (GivesPopper ())
     | RequestBodyStreamChunked (GivesPopper ())
-    | RequestBodyIO (IO RequestBody)
+    | RequestBodyIO (Prelude.IO RequestBody)
     -- ^ Allows creation of a @RequestBody@ inside the @IO@ monad, which is
     -- useful for making easier APIs (like @setRequestBodyFile@).
     --
@@ -500,7 +500,7 @@ data Request = Request
     -- no redirects. Default value: 10.
     --
     -- Since 0.1.0
-    , checkResponse :: Request -> Response BodyReader -> IO ()
+    , checkResponse :: HasCallStack => Request -> Response BodyReader -> IO ()
     -- ^ Check the response immediately after receiving the status and headers.
     -- This can be useful for throwing exceptions on non-success status codes.
     --
@@ -530,7 +530,7 @@ data Request = Request
     --
     -- Since 0.4.3
 
-    , onRequestBodyException :: SomeException -> IO ()
+    , onRequestBodyException :: HasCallStack => SomeException -> IO ()
     -- ^ How to deal with exceptions thrown while sending the request.
     --
     -- Default: ignore @IOException@s, rethrow all other exceptions.

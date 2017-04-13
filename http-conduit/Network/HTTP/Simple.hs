@@ -91,12 +91,16 @@ import qualified Network.HTTP.Types as H
 import Data.Int (Int64)
 import Control.Monad.Trans.Resource (MonadResource)
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
 -- | Perform an HTTP request and return the body as a lazy @ByteString@. Note
 -- that the entire value will be read into memory at once (no lazy I\/O will be
 -- performed).
 --
 -- @since 2.1.10
-httpLBS :: MonadIO m => H.Request -> m (H.Response L.ByteString)
+httpLBS :: HasCallStack => MonadIO m => H.Request -> m (H.Response L.ByteString)
 httpLBS req = liftIO $ do
     man <- H.getGlobalManager
     H.httpLbs req man
@@ -104,7 +108,7 @@ httpLBS req = liftIO $ do
 -- | Perform an HTTP request and ignore the response body.
 --
 -- @since 2.2.2
-httpNoBody :: MonadIO m => H.Request -> m (H.Response ())
+httpNoBody :: HasCallStack => MonadIO m => H.Request -> m (H.Response ())
 httpNoBody req = liftIO $ do
     man <- H.getGlobalManager
     H.httpNoBody req man
@@ -113,14 +117,14 @@ httpNoBody req = liftIO $ do
 -- JSON parse errors, a 'JSONException' runtime exception will be thrown.
 --
 -- @since 2.1.10
-httpJSON :: (MonadIO m, FromJSON a) => H.Request -> m (H.Response a)
+httpJSON :: (HasCallStack, MonadIO m, FromJSON a) => H.Request -> m (H.Response a)
 httpJSON req = liftIO $ httpJSONEither req >>= T.mapM (either throwIO return)
 
 -- | Perform an HTTP request and parse the body as JSON. In the event of an
 -- JSON parse errors, a @Left@ value will be returned.
 --
 -- @since 2.1.10
-httpJSONEither :: (MonadIO m, FromJSON a)
+httpJSONEither :: (HasCallStack, MonadIO m, FromJSON a)
                => H.Request
                -> m (H.Response (Either JSONException a))
 httpJSONEither req =
@@ -148,7 +152,7 @@ instance Exception JSONException
 -- | Perform an HTTP request and consume the body with the given 'C.Sink'
 --
 -- @since 2.1.10
-httpSink :: (MonadIO m, Catch.MonadMask m)
+httpSink :: (HasCallStack, MonadIO m, Catch.MonadMask m)
          => H.Request
          -> (H.Response () -> C.Sink S.ByteString m a)
          -> m a
@@ -190,7 +194,7 @@ httpSink req sink = do
 -- @
 --
 -- @since 2.2.1
-httpSource :: (MonadResource m, MonadIO n)
+httpSource :: (HasCallStack, MonadResource m, MonadIO n)
            => H.Request
            -> (H.Response (C.ConduitM i S.ByteString n ())
                 -> C.ConduitM i o m r)
@@ -208,7 +212,7 @@ httpSource req withRes = do
 -- value.
 --
 -- @since 2.2.3
-withResponse :: (MonadIO m, Catch.MonadMask m, MonadIO n)
+withResponse :: (HasCallStack, MonadIO m, Catch.MonadMask m, MonadIO n)
              => H.Request
              -> (H.Response (C.ConduitM i S.ByteString n ()) -> m a)
              -> m a
@@ -222,7 +226,7 @@ withResponse req withRes = do
 -- | Alternate spelling of 'httpLBS'
 --
 -- @since 2.1.10
-httpLbs :: MonadIO m => H.Request -> m (H.Response L.ByteString)
+httpLbs :: HasCallStack => MonadIO m => H.Request -> m (H.Response L.ByteString)
 httpLbs = httpLBS
 
 -- | Set the request method
@@ -342,7 +346,7 @@ setRequestBodyLBS = setRequestBody . H.RequestBodyLBS
 --
 -- @since 2.1.10
 setRequestBodySource :: Int64 -- ^ length of source
-                     -> C.Source IO S.ByteString
+                     -> C.Source Prelude.IO S.ByteString
                      -> H.Request
                      -> H.Request
 setRequestBodySource len src req = req { H.requestBody = HC.requestBodySource len src }

@@ -65,6 +65,12 @@ import Control.Monad.Catch (MonadThrow, throwM)
 import System.IO (withBinaryFile, hTell, hFileSize, Handle, IOMode (ReadMode))
 import Control.Monad (liftM)
 
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
+
 -- | Deprecated synonym for 'parseUrlThrow'. You probably want
 -- 'parseRequest' or 'parseRequest_' instead.
 --
@@ -337,7 +343,7 @@ needsGunzip req hs' =
      && ("content-encoding", "gzip") `elem` hs'
      && decompress req (fromMaybe "" $ lookup "content-type" hs')
 
-requestBuilder :: Request -> Connection -> IO (Maybe (IO ()))
+requestBuilder :: Request -> Connection -> IO (Maybe (Prelude.IO ()))
 requestBuilder req Connection {..} = do
     (contentLength, sendNow, sendLater) <- toTriple (requestBody req)
     if expectContinue
