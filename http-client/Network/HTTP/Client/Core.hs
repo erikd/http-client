@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 module Network.HTTP.Client.Core
     ( withResponse
     , httpLbs
@@ -31,6 +32,12 @@ import qualified Data.ByteString.Lazy as L
 import Data.Monoid
 import Control.Monad (void)
 import System.Timeout (timeout)
+
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
 
 -- | Perform a @Request@ using a connection acquired from the given @Manager@,
 -- and then provide the @Response@ to the given function. This function is
