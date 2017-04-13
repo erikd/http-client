@@ -350,7 +350,7 @@ lbsResponse res = do
         { responseBody = L.fromChunks bss
         }
 
-http :: MonadResource m
+http :: HasCallStack => MonadResource m
      => Request
      -> Manager
      -> m (Response (ResumableSource m S.ByteString))

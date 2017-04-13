@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RankNTypes #-}
 module Network.HTTP.Client.Util
     ( hGetSome
     , (<>)
@@ -41,6 +42,12 @@ import Data.ByteString (hGetSome)
 import GHC.IO.Handle.Types
 import System.IO                (hWaitForInput, hIsEOF)
 import System.IO.Error          (mkIOError, illegalOperationErrorType)
+
+import GHC.Stack
+import Prelude hiding (IO)
+import qualified Prelude
+
+type IO a = HasCallStack => Prelude.IO a
 
 -- | Like 'hGet', except that a shorter 'ByteString' may be returned
 -- if there are not enough bytes immediately available to satisfy the
