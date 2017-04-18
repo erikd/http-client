@@ -136,7 +136,7 @@ getTlsConnection mcontext tls sock = do
             , NC.connectionUseSecure = tls
             , NC.connectionUseSocks = sock
             })
-        NC.connectionClose
+        (\ c -> putStrLn "getTlsConnection connection close" >> NC.connectionClose c)
         convertConnection
 
 getTlsProxyConnection
