@@ -115,7 +115,7 @@ mkManagerSettingsContext' mcontext tls sockHTTP sockHTTPS = defaultManagerSettin
 #endif
               | otherwise = error $ "managerWrapException: " ++ show se
               where
-                se' = toException $ HttpExceptionRequest req $ InternalException se
+                se' = toException $ HttpExceptionRequest req $ InternalException (trace ("TLS: " ++ show se) se)
          in handle $ throwIO . wrapper
     }
 
