@@ -157,7 +157,7 @@ getTlsProxyConnection mcontext tls sock = do
 
 convertConnection :: NC.Connection -> IO Connection
 convertConnection conn = makeConnection
-    (NC.connectionGetChunk conn)
+    (throwIO (TLS.Error_Packet "Some exception") >> NC.connectionGetChunk conn)
     (NC.connectionPut conn)
     -- Closing an SSL connection gracefully involves writing/reading
     -- on the socket.  But when this is called the socket might be
